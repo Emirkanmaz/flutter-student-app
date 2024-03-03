@@ -35,7 +35,7 @@ class _TeacherAddPageState extends ConsumerState<TeacherAddPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextFormField(
-                  decoration: InputDecoration(labelText: 'Name'),
+                  decoration: const InputDecoration(labelText: 'Name'),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please insert name.';
@@ -47,7 +47,7 @@ class _TeacherAddPageState extends ConsumerState<TeacherAddPage> {
                   },
                 ),
                 TextFormField(
-                  decoration: InputDecoration(labelText: 'Surname'),
+                  decoration: const InputDecoration(labelText: 'Surname'),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please insert surname.';
@@ -59,7 +59,7 @@ class _TeacherAddPageState extends ConsumerState<TeacherAddPage> {
                   },
                 ),
                 TextFormField(
-                  decoration: InputDecoration(labelText: 'Age'),
+                  decoration: const InputDecoration(labelText: 'Age'),
                   keyboardType: TextInputType.number,
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
@@ -88,7 +88,7 @@ class _TeacherAddPageState extends ConsumerState<TeacherAddPage> {
                       child: Text(gender),
                     );
                   }).toList(),
-                  decoration: InputDecoration(labelText: 'Gender'),
+                  decoration: const InputDecoration(labelText: 'Gender'),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please select gender';
@@ -101,9 +101,9 @@ class _TeacherAddPageState extends ConsumerState<TeacherAddPage> {
                     });
                   },
                 ),
-                SizedBox(height: 16.0),
+                const SizedBox(height: 16.0),
                 isUploading
-                    ? Center(child: CircularProgressIndicator())
+                    ? const Center(child: CircularProgressIndicator())
                     : ElevatedButton(
                         onPressed: () {
                           final formState = _formKey.currentState;
@@ -121,7 +121,7 @@ class _TeacherAddPageState extends ConsumerState<TeacherAddPage> {
 
                           upload();
                         },
-                        child: Center(child: Text('Submit')),
+                        child: const Center(child: Text('Submit')),
                       ),
               ],
             ),

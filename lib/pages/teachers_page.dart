@@ -52,14 +52,14 @@ class TeachersPage extends ConsumerWidget {
           final created = await Navigator.of(context).push<bool>(
             MaterialPageRoute(
               builder: (context) {
-                return TeacherAddPage();
+                return const TeacherAddPage();
               },
             ),);
           if(created == true){
             await ref.read(teachersProvider).download();
           }
         },
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
     );
   }
