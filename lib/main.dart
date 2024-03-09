@@ -43,7 +43,7 @@ class MyHomePage extends ConsumerWidget {
         title: Text(title),
       ),
       // Add the drawer property to Scaffold
-      drawer: const MyDrawer(), // Replace with your drawer content
+      drawer: const MyDrawer(),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
