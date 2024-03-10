@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:student_app/pages/messages_page.dart';
@@ -6,6 +7,8 @@ import 'package:student_app/pages/teachers_page.dart';
 import 'package:student_app/repository/messages_repository.dart';
 import 'package:student_app/repository/students_repository.dart';
 import 'package:student_app/repository/teachers_repository.dart';
+
+import 'firebase_options.dart';
 
 void main() {
   runApp(const ProviderScope(child: StudentApp()));
@@ -22,7 +25,7 @@ class StudentApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Student Home Page'),
+      home: const SplashScreen(),
     );
   }
 }
@@ -57,9 +60,9 @@ class MyHomePage extends ConsumerWidget {
                     },
                   ),
                 );
-
               },
-              child: Text("${ref.watch(unreadedMessagesProvider)} New Messages"),
+              child:
+                  Text("${ref.watch(unreadedMessagesProvider)} New Messages"),
             ),
             TextButton(
               onPressed: () {
@@ -88,6 +91,39 @@ class MyHomePage extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    initializeFirebase();
+  }
+
+  Future<void> initializeFirebase() async {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const MyHomePage(title: 'Student Home Page'),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator(),),
     );
   }
 }

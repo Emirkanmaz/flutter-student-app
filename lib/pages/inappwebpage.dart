@@ -60,7 +60,7 @@ class _MyAppState extends State<MyApp> {
         ));
       }
     });
-    FlutterDownloader.registerCallback(downloadCallback as DownloadCallback);
+    FlutterDownloader.registerCallback(downloadCallback);
   }
 
   @override
@@ -70,12 +70,11 @@ class _MyAppState extends State<MyApp> {
   }
 
   @pragma('vm:entry-point')
-  static void downloadCallback(
-      String id, DownloadTaskStatus status, int progress) {
-    final SendPort? send =
-    IsolateNameServer.lookupPortByName('downloader_send_port');
+  static void downloadCallback(String id, int status, int progress) {
+    final SendPort? send = IsolateNameServer.lookupPortByName('downloader_send_port');
     send?.send([id, status, progress]);
   }
+
 
   void handleClick(int item) async {
     switch (item) {
@@ -88,7 +87,7 @@ class _MyAppState extends State<MyApp> {
         await webViewController?.loadUrl(
             urlRequest: URLRequest(
                 url: WebUri(
-                    "https://www.w3schools.com/tags/tryit.asp?filename=tryhtml5_a_download")));
+                    "https://emirkanmaz.github.io/webpagetest/")));
         break;
     }
   }
@@ -119,17 +118,9 @@ class _MyAppState extends State<MyApp> {
                 webViewController = controller;
               },
               shouldOverrideUrlLoading: (controller, navigationAction) async {
-                if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-                  final shouldPerformDownload =
-                      navigationAction.shouldPerformDownload ?? false;
-                  final url = navigationAction.request.url;
-                  if (shouldPerformDownload && url != null) {
-                    await downloadFile(url.toString());
-                    return NavigationActionPolicy.DOWNLOAD;
-                  }
-                }
                 return NavigationActionPolicy.ALLOW;
               },
+
               onDownloadStartRequest: (controller, downloadStartRequest) async {
                 await downloadFile(downloadStartRequest.url.toString(),
                     downloadStartRequest.suggestedFilename);
@@ -140,9 +131,9 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> downloadFile(String url, [String? filename]) async {
-    var hasStoragePermission = await Permission.storage.isGranted;
+    var hasStoragePermission = await Permission.manageExternalStorage.isGranted;
     if (!hasStoragePermission) {
-      final status = await Permission.storage.request();
+      final status = await Permission.manageExternalStorage.request();
       hasStoragePermission = status.isGranted;
     }
     if (hasStoragePermission) {
