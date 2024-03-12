@@ -1,10 +1,15 @@
+import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -18,10 +23,8 @@ Future main() async {
 
   // Plugin must be initialized before using
   await FlutterDownloader.initialize(
-      debug: true,
-      // optional: set to false to disable printing logs to console (default: true)
-      ignoreSsl:
-      false // option: set to false to disable working with http links (default: false)
+    debug: true,
+    ignoreSsl: false,
   );
 
   runApp(const MaterialApp(home: MyApp()));
@@ -49,12 +52,12 @@ class _MyAppState extends State<MyApp> {
         _port.sendPort, 'downloader_send_port');
     _port.listen((dynamic data) {
       String id = data[0];
-      DownloadTaskStatus status = data[1];
+      int status = data[1];
       int progress = data[2];
       if (kDebugMode) {
         print("Download progress: $progress%");
       }
-      if (status == DownloadTaskStatus.complete) {
+      if (status == 3 /* DownloadTaskStatus.complete */) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text("Download $id completed!"),
         ));
@@ -75,7 +78,6 @@ class _MyAppState extends State<MyApp> {
     send?.send([id, status, progress]);
   }
 
-
   void handleClick(int item) async {
     switch (item) {
       case 0:
@@ -87,7 +89,7 @@ class _MyAppState extends State<MyApp> {
         await webViewController?.loadUrl(
             urlRequest: URLRequest(
                 url: WebUri(
-                    "https://emirkanmaz.github.io/webpagetest/")));
+                    "https://emirkanmaz.github.io/webpagetest/download")));
         break;
     }
   }
@@ -95,21 +97,26 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: const Text("InAppWebView Download"),
-          actions: [
-            PopupMenuButton<int>(
-              onSelected: (item) => handleClick(item),
-              itemBuilder: (context) => [
-                const PopupMenuItem<int>(
-                    value: 0, child: Text('Download file 1')),
-                const PopupMenuItem<int>(
-                    value: 1, child: Text('Download file 2')),
-              ],
-            ),
-          ],
-        ),
-        body: Column(children: <Widget>[
+      appBar: AppBar(
+        title: const Text("InAppWebView Download"),
+        actions: [
+          PopupMenuButton<int>(
+            onSelected: (item) => handleClick(item),
+            itemBuilder: (context) => [
+              const PopupMenuItem<int>(
+                value: 0,
+                child: Text('Download file 1'),
+              ),
+              const PopupMenuItem<int>(
+                value: 1,
+                child: Text('Download file 2'),
+              ),
+            ],
+          ),
+        ],
+      ),
+      body: Column(
+        children: <Widget>[
           Expanded(
             child: InAppWebView(
               key: webViewKey,
@@ -120,30 +127,44 @@ class _MyAppState extends State<MyApp> {
               shouldOverrideUrlLoading: (controller, navigationAction) async {
                 return NavigationActionPolicy.ALLOW;
               },
-
               onDownloadStartRequest: (controller, downloadStartRequest) async {
-                await downloadFile(downloadStartRequest.url.toString(),
-                    downloadStartRequest.suggestedFilename);
+                await downloadFile(
+                  downloadStartRequest.url.toString(),
+                  downloadStartRequest.suggestedFilename,
+                );
               },
             ),
           ),
-        ]));
+        ],
+      ),
+    );
   }
 
   Future<void> downloadFile(String url, [String? filename]) async {
-    var hasStoragePermission = await Permission.manageExternalStorage.isGranted;
-    if (!hasStoragePermission) {
-      final status = await Permission.manageExternalStorage.request();
-      hasStoragePermission = status.isGranted;
-    }
-    if (hasStoragePermission) {
-      final taskId = await FlutterDownloader.enqueue(
-          url: url,
-          headers: {},
-          // optional: header send with url (auth token etc)
-          savedDir: (await getTemporaryDirectory()).path,
-          saveInPublicStorage: true,
-          fileName: filename);
+    try {
+      final dio = Dio();
+      final response = await dio.download(
+        url,
+        (await getTemporaryDirectory()).path + "/" + (filename ?? "downloaded_file"),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Download completed!"),
+        ));
+
+        // Open the downloaded file
+        OpenFile.open(response.data.toString());
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Failed to download file"),
+        ));
+      }
+    } catch (e) {
+      print("Error downloading file: $e");
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Error downloading file"),
+      ));
     }
   }
 }
