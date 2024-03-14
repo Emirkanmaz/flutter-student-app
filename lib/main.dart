@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:student_app/pages/google_sign_in.dart';
 import 'package:student_app/pages/messages_page.dart';
 import 'package:student_app/pages/students_page.dart';
 import 'package:student_app/pages/teachers_page.dart';
@@ -103,6 +105,8 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  bool isFirebaseInitialized = false;
+
   @override
   void initState() {
     super.initState();
@@ -113,6 +117,16 @@ class _SplashScreenState extends State<SplashScreen> {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    setState(() {
+      isFirebaseInitialized = true;
+    });
+    if(FirebaseAuth.instance.currentUser != null){
+      goHomePage();
+    }
+    // goHomePage();
+  }
+
+  void goHomePage() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) => const MyHomePage(title: 'Student Home Page'),
@@ -122,8 +136,17 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator(),),
+    return Scaffold(
+      body: Center(
+        child: isFirebaseInitialized
+            ? ElevatedButton(
+                onPressed: () async {
+                  await signInWithGoogle();
+                  goHomePage();
+                },
+                child: Text("Sign with GOOGLE"))
+            : const CircularProgressIndicator(),
+      ),
     );
   }
 }
@@ -141,9 +164,9 @@ class MyDrawer extends StatelessWidget {
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.primary,
             ),
-            child: const Text(
-              'Student Name',
-              style: TextStyle(
+            child: Text(
+              FirebaseAuth.instance.currentUser!.displayName!,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 24,
               ),
@@ -181,6 +204,17 @@ class MyDrawer extends StatelessWidget {
                   builder: (context) {
                     return const TeachersPage();
                   },
+                ),
+              );
+            },
+          ),
+          ListTile(
+            title: const Text('Logout'),
+            onTap: () async {
+              await signOutWithGoogle();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => const SplashScreen(),
                 ),
               );
             },
