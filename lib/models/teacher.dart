@@ -12,7 +12,7 @@ class Teacher {
         age = m["age"],
         female = m["female"];
 
-  Map toMap() {
+  Map<String, dynamic> toMap() {
     return{
     "name" : name,
     "surname" : surname,

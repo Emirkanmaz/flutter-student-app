@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -120,7 +121,13 @@ class _SplashScreenState extends State<SplashScreen> {
     setState(() {
       isFirebaseInitialized = true;
     });
-    if(FirebaseAuth.instance.currentUser != null){
+    if (FirebaseAuth.instance.currentUser != null) {
+
+      String uid = FirebaseAuth.instance.currentUser!.uid;
+      FirebaseFirestore.instance.collection('users').doc(uid).set({
+        "SignIn": true,
+        "lastSignIn": FieldValue.serverTimestamp(),
+      });
       goHomePage();
     }
     // goHomePage();
@@ -141,7 +148,13 @@ class _SplashScreenState extends State<SplashScreen> {
         child: isFirebaseInitialized
             ? ElevatedButton(
                 onPressed: () async {
-                  await signInWithGoogle();
+                  UserCredential userCredential = await signInWithGoogle();
+
+                  String uid = FirebaseAuth.instance.currentUser!.uid;
+                  FirebaseFirestore.instance.collection('users').doc(uid).set({
+                    "SignIn": true,
+                    "lastSignIn": FieldValue.serverTimestamp(),
+                  });
                   goHomePage();
                 },
                 child: Text("Sign with GOOGLE"))
