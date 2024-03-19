@@ -1,8 +1,13 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:student_app/pages/google_sign_in.dart';
 import 'package:student_app/pages/messages_page.dart';
 import 'package:student_app/pages/students_page.dart';
@@ -33,20 +38,31 @@ class StudentApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends ConsumerWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
+class MyHomePage extends ConsumerStatefulWidget {
+  const MyHomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends ConsumerState<MyHomePage> {
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    ref.read(teachersProvider).download();
+    // Future.delayed(Duration.zero).then((value) => ref.read(teachersProvider).download());
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final studentsRepository = ref.watch(studentsProvider);
     final teachersRepository = ref.watch(teachersProvider);
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(title),
+        title: Text('Student Home Page'),
       ),
       // Add the drawer property to Scaffold
       drawer: const MyDrawer(),
@@ -122,7 +138,6 @@ class _SplashScreenState extends State<SplashScreen> {
       isFirebaseInitialized = true;
     });
     if (FirebaseAuth.instance.currentUser != null) {
-
       String uid = FirebaseAuth.instance.currentUser!.uid;
       FirebaseFirestore.instance.collection('users').doc(uid).set({
         "SignIn": true,
@@ -136,7 +151,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void goHomePage() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (context) => const MyHomePage(title: 'Student Home Page'),
+        builder: (context) => const MyHomePage(),
       ),
     );
   }
@@ -164,8 +179,38 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 }
 
-class MyDrawer extends StatelessWidget {
+class MyDrawer extends StatefulWidget {
   const MyDrawer({super.key});
+
+  @override
+  State<MyDrawer> createState() => _MyDrawerState();
+}
+
+class _MyDrawerState extends State<MyDrawer> {
+  Future<Uint8List?>? _ppicFuture;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _ppicFuture = _ppicDownload();
+  }
+
+  final uid = FirebaseAuth.instance.currentUser!.uid;
+
+  Future<Uint8List?> _ppicDownload() async {
+    final documentSnapshot =
+        await FirebaseFirestore.instance.collection("users").doc(uid).get();
+    final userRecMap = documentSnapshot.data();
+
+    if (userRecMap == null) return null;
+
+    if (userRecMap.containsKey("ppicref")) {
+      Uint8List? uint8list =
+          await FirebaseStorage.instance.ref(userRecMap["ppicref"]).getData();
+      return uint8list;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -177,12 +222,56 @@ class MyDrawer extends StatelessWidget {
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.primary,
             ),
-            child: Text(
-              FirebaseAuth.instance.currentUser!.displayName!,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  FirebaseAuth.instance.currentUser!.displayName!,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                  ),
+                ),
+                InkWell(
+                  onTap: () async {
+                    XFile? xFile = await ImagePicker()
+                        .pickImage(source: ImageSource.camera);
+                    if (xFile == null) return;
+
+                    final imagePath = xFile.path;
+
+                    final uid = FirebaseAuth.instance.currentUser!.uid;
+                    final ppicRef =
+                        FirebaseStorage.instance.ref("ppcis").child("$uid.jpg");
+                    await ppicRef.putFile(File(imagePath));
+
+                    FirebaseFirestore.instance
+                        .collection("users")
+                        .doc(uid)
+                        .update({"ppicref": ppicRef.fullPath});
+
+                    setState(() {
+                      _ppicFuture = _ppicDownload();
+                    });
+                  },
+                  child: FutureBuilder<Uint8List?>(
+                    future: _ppicFuture,
+                    builder: (BuildContext context,
+                        AsyncSnapshot<Uint8List?> snapshot) {
+                      if (snapshot.hasData && snapshot.data != null) {
+                        final picInMemory = snapshot.data!;
+
+                        return CircleAvatar(
+                          backgroundImage: MemoryImage(picInMemory),
+                        );
+                      }
+                      return CircleAvatar(
+                        child: Icon(Icons.camera_alt),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
           ListTile(
