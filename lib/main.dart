@@ -62,7 +62,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text('Student Home Page'),
+        title: const Text('Student Home Page'),
       ),
       // Add the drawer property to Scaffold
       drawer: const MyDrawer(),
@@ -172,7 +172,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   });
                   goHomePage();
                 },
-                child: Text("Sign with GOOGLE"))
+                child: const Text("Sign with GOOGLE"))
             : const CircularProgressIndicator(),
       ),
     );
@@ -242,13 +242,10 @@ class _MyDrawerState extends State<MyDrawer> {
 
                     final uid = FirebaseAuth.instance.currentUser!.uid;
                     final ppicRef =
-                        FirebaseStorage.instance.ref("ppcis").child("$uid.jpg");
+                        FirebaseStorage.instance.ref("ppics").child("$uid.jpg");
                     await ppicRef.putFile(File(imagePath));
 
-                    FirebaseFirestore.instance
-                        .collection("users")
-                        .doc(uid)
-                        .update({"ppicref": ppicRef.fullPath});
+                    FirebaseFirestore.instance.collection("users").doc(uid).update({"ppicref": ppicRef.fullPath});
 
                     setState(() {
                       _ppicFuture = _ppicDownload();
@@ -262,10 +259,10 @@ class _MyDrawerState extends State<MyDrawer> {
                         final picInMemory = snapshot.data!;
 
                         return CircleAvatar(
-                          backgroundImage: MemoryImage(picInMemory),
+                          backgroundImage: NetworkImage(FirebaseAuth.instance.currentUser!.photoURL!),
                         );
                       }
-                      return CircleAvatar(
+                      return const CircleAvatar(
                         child: Icon(Icons.camera_alt),
                       );
                     },
